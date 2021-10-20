@@ -26,15 +26,15 @@
   <link name="link0">
     <visual>
       <geometry>
-        <cylinder length="3" radius="0.35"/>
+        <cylinder length="4" radius="0.35"/>
       </geometry>
-    <origin rpy="0 0 0"  xyz="0 0 1.5" />
+    <origin rpy="0 0 0"  xyz="0 0 2" />
     </visual>
     <collision>
       <geometry>
-        <cylinder length="3" radius="0.35"/>
+        <cylinder length="4" radius="0.35"/>
       </geometry>
-      <origin rpy="0 0 0"  xyz="0 0 1.5" />
+      <origin rpy="0 0 0"  xyz="0 0 2" />
     </collision>
     <inertial>
       <mass value="5"/>
@@ -46,15 +46,15 @@
   <link name="link1">
     <visual>
       <geometry>
-        <cylinder length="3" radius="0.2"/>
+        <cylinder length="3.2" radius="0.2"/>
       </geometry>
-    <origin rpy="0 0 0"  xyz="0 0 1.5" />
+    <origin rpy="0 0 0"  xyz="0 0 1.6" />
     </visual>
     <collision>
       <geometry>
-        <cylinder length="3" radius="0.2"/>
+        <cylinder length="3.2" radius="0.2"/>
       </geometry>
-      <origin rpy="0 0 0"  xyz="0 0 1.5" />
+      <origin rpy="0 0 0"  xyz="0 0 1.6" />
     </collision>
     <inertial>
       <mass value="3"/>
@@ -65,15 +65,15 @@
   <link name="link2">
     <visual>
       <geometry>
-        <cylinder length="2" radius="0.1"/>
+        <cylinder length="2.8" radius="0.1"/>
       </geometry>
-    <origin rpy="0 0 0"  xyz="0 0 1" />
+    <origin rpy="0 0 0"  xyz="0 0 1.4" />
     </visual>
     <collision>
       <geometry>
-        <cylinder length="2" radius="0.1"/>
+        <cylinder length="2.8" radius="0.1"/>
       </geometry>
-      <origin rpy="0 0 0"  xyz="0 0 1" />
+      <origin rpy="0 0 0"  xyz="0 0 1.4" />
     </collision>
     <inertial>
       <mass value="1"/>
@@ -195,7 +195,7 @@
   <joint name="link0_to_link1" type="revolute">
     <parent link="link0"/>
     <child link="sphere0"/>
-    <origin rpy="0 0 0" xyz="0 0 3"/>
+    <origin rpy="0 0 0" xyz="0 0 4"/>
     <limit effort="1000.0" lower="-${pi/2}" upper="${pi/2}" velocity="5"/>
     <axis xyz="0 1 0"/>
   </joint>
@@ -211,7 +211,7 @@
   <joint name="link1_to_link2" type="revolute">
     <parent link="link1"/>
     <child link="link2"/>
-    <origin rpy="0 0 0" xyz="0 0 3"/>
+    <origin rpy="0 0 0" xyz="0 0 3.2"/>
     <limit effort="1000.0" lower="-${pi/2}" upper="${pi/2}" velocity="5"/>
     <axis xyz="0 1 0"/>
   </joint>
@@ -226,7 +226,7 @@
   <joint name="sphere2_to_link2" type="fixed">
     <parent link="link2"/>
     <child link="sphere2"/>
-    <origin rpy="0 0 0" xyz="0 0 2"/>
+    <origin rpy="0 0 0" xyz="0 0 2.8"/>
   </joint>
 
 <!--Transmissions-->
