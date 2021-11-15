@@ -61,26 +61,37 @@ class joint_estimation_1:
       # In this method you can focus on detecting the centre of the red circle
     def detect_red(self,yz_image, xz_image):
         # Isolate the blue colour in the image as a binary image
-        yz_mask = cv2.inRange(yz_image, (0, 0, 1), (0, 0, 255))
-        cv2.imshow('ass', 255 - self.yz_image[:,:,0])
+        hsv_image = cv2.cvtColor(yz_image, cv2.COLOR_BGR2HSV)
+        yz_mask = cv2.inRange(hsv_image, (0,50,50), (20,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         yz_mask = cv2.dilate(yz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(yz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cy = int(M['m10'] / M['m00'])
-        cz = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cy = int(m10 / m00)
+        cz = int(m01 / m00)
 
-        xz_mask = cv2.inRange(xz_image, (0, 0, 100), (0, 0, 255))
+        hsv_image = cv2.cvtColor(xz_image, cv2.COLOR_BGR2HSV)
+        xz_mask = cv2.inRange(hsv_image, (0,50,50), (20,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         xz_mask = cv2.dilate(xz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(xz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cx = int(M['m10'] / M['m00'])
-        cz2 = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cx = int(m10 / m00)
+        cz = int(m01 / m00)
         # cv2.imshow('asas', yz_mask)
         # cv2.imshow('asasasas', xz_mask)
         cv2.waitKey(1)
@@ -91,25 +102,37 @@ class joint_estimation_1:
 
     # Detecting the centre of the green circle
     def detect_green(self,yz_image, xz_image):
-        yz_mask = cv2.inRange(yz_image, (0, 100, 0), (0, 255, 0))
+        hsv_image = cv2.cvtColor(yz_image, cv2.COLOR_BGR2HSV)
+        yz_mask = cv2.inRange(hsv_image, (50,50,50), (70,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         yz_mask = cv2.dilate(yz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(yz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cy = int(M['m10'] / M['m00'])
-        cz = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cy = int(m10 / m00)
+        cz = int(m01 / m00)
 
-        xz_mask = cv2.inRange(xz_image, (0, 100, 0), (0, 255, 100))
+        hsv_image = cv2.cvtColor(xz_image, cv2.COLOR_BGR2HSV)
+        xz_mask = cv2.inRange(hsv_image, (50,50,50), (70,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         xz_mask = cv2.dilate(xz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(xz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cx = int(M['m10'] / M['m00'])
-        cz2 = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cx = int(m10 / m00)
+        cz2 = int(m01 / m00)
         # cv2.imshow('asas', yz_mask)
         # cv2.imshow('asasasas', xz_mask)
         cv2.waitKey(1)
@@ -119,25 +142,37 @@ class joint_estimation_1:
 
     # Detecting the centre of the blue circle
     def detect_blue(self,yz_image, xz_image):
-        yz_mask = cv2.inRange(yz_image, (100, 0, 0), (255, 0, 0))
+        hsv_image = cv2.cvtColor(yz_image, cv2.COLOR_BGR2HSV)
+        yz_mask = cv2.inRange(hsv_image, (110,50,50), (130,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         yz_mask = cv2.dilate(yz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(yz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cy = int(M['m10'] / M['m00'])
-        cz = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cy = int(m10 / m00)
+        cz = int(m01 / m00)
 
-        xz_mask = cv2.inRange(xz_image, (100, 0, 0), (255, 0, 0))
+        hsv_image = cv2.cvtColor(xz_image, cv2.COLOR_BGR2HSV)
+        xz_mask = cv2.inRange(hsv_image, (110,50,50), (130,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         xz_mask = cv2.dilate(xz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(xz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cx = int(M['m10'] / M['m00'])
-        cz2 = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cx = int(m10 / m00)
+        cz2 = int(m01 / m00)
         # cv2.imshow('asas', yz_mask)
         # cv2.imshow('asasasas', xz_mask)
         cv2.waitKey(1)
@@ -147,25 +182,37 @@ class joint_estimation_1:
 
     # Detecting the centre of the yellow circle
     def detect_yellow(self,yz_image, xz_image):
-        yz_mask = cv2.inRange(yz_image, (0, 100, 100), (0, 255, 255))
+        hsv_image = cv2.cvtColor(yz_image, cv2.COLOR_BGR2HSV)
+        yz_mask = cv2.inRange(hsv_image, (20,50,50), (40,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         yz_mask = cv2.dilate(yz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(yz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cy = int(M['m10'] / M['m00'])
-        cz = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cy = int(m10 / m00)
+        cz = int(m01 / m00)
 
-        xz_mask = cv2.inRange(xz_image, (0, 100, 100), (0, 255, 255))
+        hsv_image = cv2.cvtColor(xz_image, cv2.COLOR_BGR2HSV)
+        xz_mask = cv2.inRange(hsv_image, (20,50,50), (40,255,255))
         # This applies a dilate that makes the binary region larger (the more iterations the larger it becomes)
         kernel = np.ones((5, 5), np.uint8)
         xz_mask = cv2.dilate(xz_mask, kernel, iterations=3)
         # Obtain the moments of the binary image
         M = cv2.moments(xz_mask)
         # Calculate pixel coordinates for the centre of the blob
-        cx = int(M['m10'] / M['m00'])
-        cz2 = int(M['m01'] / M['m00'])
+        m10 = M['m10']
+        m00 = M['m00']
+        m01 = M['m01']
+        if m00 == 0:
+            m00 = 0.000001
+        cx = int(m10 / m00)
+        cz2 = int(m01 / m00)
         # cv2.imshow('asas', yz_mask)
         # cv2.imshow('asasasas', xz_mask)
         cv2.waitKey(1)
@@ -175,6 +222,14 @@ class joint_estimation_1:
 
     # Calculate the relevant joint angles from the image
     def detect_joint_angles(self, yz_image, xz_image):
+        # hsv_image = cv2.cvtColor(self.yz_image, cv2.COLOR_BGR2HSV)
+        # mask = cv2.inRange(hsv_image, (110,50,50), (130,255,255)) # blue
+        # mask = cv2.inRange(hsv_image, (50,50,50), (70,255,255)) # green
+        # mask = cv2.inRange(hsv_image, (20,50,50), (40,255,255)) # yellow
+        # mask = cv2.inRange(hsv_image, (0,50,50), (20,255,255)) # red
+        # cv2.imshow('HSV Image', mask)
+    
+
         a = self.pixel2meter(yz_image)
         # Obtain the centre of each coloured blob 
         circle1Pos = a * self.detect_green(yz_image, xz_image)
