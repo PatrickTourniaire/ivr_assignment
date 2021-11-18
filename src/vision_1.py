@@ -24,6 +24,9 @@ class joint_estimation_1:
             "link_4": 2.8           
         }
 
+        self.counter=0
+        self.counter1=0
+
         self.RED_BLOB_HSV_COLOR_RANGE_BELOW = (0,50,50)
         self.RED_BLOB_HSV_COLOR_RANGE_UPPER = (20,255,255)
 
@@ -124,15 +127,33 @@ class joint_estimation_1:
         circle3Pos = a * self.detect_color(yz_image, xz_image, "blue") 
         circle4Pos = a * self.detect_color(yz_image, xz_image, "red")
 
+
+
+        thres = 0
+        if (circle3Pos[2] - circle2Pos[2] > thres):
+            print("[yz] thres: " + str(self.counter))
+            self.counter += 1
+
+            circle3Pos[2] = circle2Pos[2]
+
+        thres = 0
+        if (circle3Pos[3] - circle2Pos[3] > thres):
+            print("[xz] thres: " + str(self.counter1))
+            self.counter1 += 1
+
+            circle3Pos[3] = circle2Pos[3]
+
+        print("\n")
+
         vector_circle1_circle2 = (circle2Pos - circle1Pos)
         vector_circle2_circle3 = (circle3Pos - circle2Pos)
         vector_circle3_circle4 = (circle4Pos - circle3Pos)
 
-        print('=== Circle Positions ===\nCircle1Pos: {}\nCircle2Pos: {}\nCircle3Pos: {}\nCircle4Pos: {}\n=== ==='.format(
-            circle1Pos, circle2Pos, circle3Pos, circle4Pos))
+        #print('=== Circle Positions ===\nCircle1Pos: {}\nCircle2Pos: {}\nCircle3Pos: {}\nCircle4Pos: {}\n=== ==='.format(
+        #    circle1Pos, circle2Pos, circle3Pos, circle4Pos))
 
-        print('=== Vector Positions ===\nCircle1 to Circle2: {}\nCircle2 to Circle3: {}\nCircle3 to Circle4: {}\n===   ==='.format(
-            vector_circle1_circle2, vector_circle2_circle3, vector_circle3_circle4))
+        #print('=== Vector Positions ===\nCircle1 to Circle2: {}\nCircle2 to Circle3: {}\nCircle3 to Circle4: {}\n===   ==='.format(
+        #    vector_circle1_circle2, vector_circle2_circle3, vector_circle3_circle4))
 
         # ===== for drawing detecting blob centers on image ====
 
@@ -140,7 +161,7 @@ class joint_estimation_1:
         circle2Pos_img = self.detect_color(yz_image, xz_image, "yellow") 
         circle3Pos_img = self.detect_color(yz_image, xz_image, "blue") 
         circle4Pos_img = self.detect_color(yz_image, xz_image, "red")
-        print(circle1Pos_img)
+        #print(circle1Pos_img)
 
         image_with_centers = cv2.circle(self.xz_image, (int(circle1Pos_img[0]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
         image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[0]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
@@ -181,7 +202,7 @@ class joint_estimation_1:
         #     circle3Pos[1] = circle2Pos[1]
         # ===== Angles =====
 
-        print('=== ANGLES ===')
+        #print('=== ANGLES ===')
         ja2 = - np.arctan2(circle2Pos[0] - circle3Pos[0], circle2Pos[3] - circle3Pos[3])
         ja3 = np.arctan2(circle2Pos[1] - circle3Pos[1], circle2Pos[2] - circle3Pos[2])
         unit_vector1 = vector_circle2_circle3 / np.linalg.norm(vector_circle2_circle3)
@@ -189,8 +210,8 @@ class joint_estimation_1:
         dot_1_2 = np.dot(unit_vector1, unit_vector2)
         ja4 = np.arccos(dot_1_2)
 
-        print([ja2, ja3, ja4])
-        print("\n")
+        #print([ja2, ja3, ja4])
+        #print("\n")
 
         # theta2 = np.arctan2(vector_circle1_circle2[0], vector_circle1_circle2[2])
 
