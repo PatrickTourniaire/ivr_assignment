@@ -110,21 +110,12 @@ class joint_estimation_1:
         m01 = M['m01']
         if m00 == 0:
             m00 = 0.000001
-        cy = int(m10 / m00)
-        cz_yz = int(m01 / m00)
         return (int(m10 / m00), int(m01 / m00))
 
 
 
     # Calculate the relevant joint angles from the image
     def detect_joint_angles(self, yz_image, xz_image):
-        # hsv_image = cv2.cvtColor(self.yz_image, cv2.COLOR_BGR2HSV)
-        # mask = cv2.inRange(hsv_image, (110,50,50), (130,255,255)) # blue
-        # mask = cv2.inRange(hsv_image, (50,50,50), (70,255,255)) # green
-        # mask = cv2.inRange(hsv_image, (20,50,50), (40,255,255)) # yellow
-        # mask = cv2.inRange(hsv_image, (0,50,50), (20,255,255)) # red
-        # cv2.imshow('HSV Image', mask)
-    
 
         a = self.pixel2meter(yz_image)
         # Obtain the centre of each coloured blob 
@@ -167,6 +158,27 @@ class joint_estimation_1:
         cv2.imshow('Images with blob centers YZ', cv2.resize(image_with_centers, (400,400)))
         cv2.imwrite('robot_yz.jpg', image_with_centers)
 
+        # ===== Corrections =====
+        thres = 0
+        thres1 = 0
+
+        # if(circle3Pos[2] < circle2Pos[2]):
+        #     if (circle3Pos[3] < circle2Pos[3]):
+        #         circle3Pos[2] = circle2Pos[2]
+        #         circle3Pos[3] = circle2Pos[3]
+        #     else:
+        #         circle3Pos[2] = circle2Pos[3]
+        # if(circle3Pos[3] < circle2Pos[3]):
+        #     if (circle3Pos[2] < circle2Pos[2]):
+        #         circle3Pos[2] = circle2Pos[2]
+        #         circle3Pos[3] = circle2Pos[3]
+        #     else:
+        #         circle3Pos[3] = circle2Pos[2]
+
+        # if (abs(circle2Pos[1] - circle3Pos[1]) < thres and circle2Pos[0] - circle3Pos[0] > thres1):
+        #     circle3Pos[0] = circle2Pos[0]
+        # if (abs(circle2Pos[0] - circle3Pos[0]) < thres and circle2Pos[1] - circle3Pos[1] > thres1):
+        #     circle3Pos[1] = circle2Pos[1]
         # ===== Angles =====
 
         print('=== ANGLES ===')
