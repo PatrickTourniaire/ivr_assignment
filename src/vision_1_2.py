@@ -11,6 +11,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Float64MultiArray, Float64
 from cv_bridge import CvBridge, CvBridgeError
 import message_filters
+import math
 
 
 class joint_estimation_1:
@@ -105,12 +106,7 @@ class joint_estimation_1:
         (cy, cz_yz), small_area_yz = self.find_moments(yz_image, color_range_below, color_range_upper)
         (cx, cz_xz), small_area_xz = self.find_moments(xz_image, color_range_below, color_range_upper)
 
-        cz = cz_yz
-
-        if (small_area_yz):
-            cz = cz_xz
-
-        return np.array([cx, cy, cz]), (small_area_yz, small_area_xz)
+        return np.array([cx, cy, cz_xz, cz_yz]), (small_area_yz, small_area_xz)
 
     def find_moments(self, image, color_range_below, color_range_upper):
         hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -173,16 +169,15 @@ class joint_estimation_1:
         image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[0]), int(circle3Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
         image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[0]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
 
-        cv2.imshow('Images with blob centers', cv2.resize(image_with_centers, (400,400)))
+        cv2.imshow('Images with blob centers XZ', cv2.resize(image_with_centers, (400,400)))
         cv2.imwrite('robot_xz.jpg', image_with_centers)
 
-        image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[1]), int(circle3Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[1]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[1]), int(circle3Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[1]), int(circle4Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
 
         cv2.imshow('Images with blob centers YZ', cv2.resize(image_with_centers, (400,400)))
-        
 
 
         a = self.pixel2meter(yz_image)
@@ -192,7 +187,7 @@ class joint_estimation_1:
         circle2Pos, circle2SmallAreas = self.detect_color(yz_image, xz_image, "yellow")[0], self.detect_color(yz_image, xz_image, "yellow")[1]
         circle3Pos, circle3SmallAreas = self.detect_color(yz_image, xz_image, "blue")[0], self.detect_color(yz_image, xz_image, "blue")[1] 
         circle4Pos, circle4SmallAreas = self.detect_color(yz_image, xz_image, "red")[0], self.detect_color(yz_image, xz_image, "red")[1]
-
+        
         if (circle3Pos[2] > circle2Pos[2]):
             circle3Pos[2] = circle2Pos[2]
 
@@ -214,7 +209,9 @@ class joint_estimation_1:
         if circle4SmallAreas[1]:
             circle4Pos[0] = circle3Pos[0]
 
-        
+        link2_vec = [circle3Pos[0] - circle2Pos[0], circle3Pos[2] - circle2Pos[2]]
+        link3_vec = [circle4Pos[0] - circle3Pos[0], circle4Pos[2] - circle3Pos[2]]
+
         vector_circle1_circle2 = (circle2Pos - circle1Pos)
         vector_circle2_circle3 = (circle3Pos - circle2Pos)
         vector_circle3_circle4 = (circle4Pos - circle3Pos)
@@ -222,13 +219,18 @@ class joint_estimation_1:
         #print('=== ANGLES ===')
         ja2 = - np.arctan2(circle2Pos[0] - circle3Pos[0], circle2Pos[2] - circle3Pos[2])
         ja3 = np.arctan2(circle2Pos[1] - circle3Pos[1], circle2Pos[2] - circle3Pos[2])
-        unit_vector1 = vector_circle2_circle3[0:3] / np.linalg.norm(vector_circle2_circle3[0:3])
-        unit_vector2 = vector_circle3_circle4[0:3] / np.linalg.norm(vector_circle3_circle4[0:3])
+        unit_vector1 = vector_circle2_circle3[[0,1,2]] / np.linalg.norm(vector_circle2_circle3[[0,1,2]])
+        unit_vector2 = vector_circle3_circle4[[0,1,2]] / np.linalg.norm(vector_circle3_circle4[[0,1,2]])
         dot_1_2 = np.dot(unit_vector1, unit_vector2)
-        cross_1_2 = np.cross(vector_circle2_circle3, vector_circle3_circle4)
+        cross_1_2 = np.cross(vector_circle2_circle3[[0, 1, 2]], vector_circle3_circle4[[0,1,2]])
         ja4 = np.arccos(dot_1_2)
         if ja3 > 0 and cross_1_2[2] < 0:
             ja4 = -ja4
+        if ja4 > np.math.pi / 2:
+            ja4 = np.math.pi / 2
+        # if (len(self.previous_angles) > 2):
+        #     if abs(self.previous_angles[2] - ja4) > 0.4 and self.previous_angles[2] != 0:
+        #         ja4 = self.previous_angles[2]
 
 
 
