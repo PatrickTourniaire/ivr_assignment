@@ -43,7 +43,7 @@ class joint_estimation_1:
         self.image_sub1 = message_filters.Subscriber('/camera1/robot/image_raw', Image)
         self.image_sub2 = message_filters.Subscriber('/camera2/robot/image_raw', Image)
         self.joint_angles_pub = rospy.Publisher('joint_states_1', Float64MultiArray, queue_size=10)
-        self.ts = message_filters.TimeSynchronizer([self.image_sub1, self.image_sub2], 100)
+        self.ts = message_filters.TimeSynchronizer([self.image_sub1, self.image_sub2], 10)
         self.ts.registerCallback(self.callback)
         self.bridge = CvBridge()
 
@@ -131,19 +131,19 @@ class joint_estimation_1:
 
         thres = 0
         if (circle3Pos[2] - circle2Pos[2] > thres):
-            print("[yz] thres: " + str(self.counter))
+            # print("[yz] thres: " + str(self.counter))
             self.counter += 1
 
             circle3Pos[2] = circle2Pos[2]
 
         thres = 0
         if (circle3Pos[3] - circle2Pos[3] > thres):
-            print("[xz] thres: " + str(self.counter1))
+            # print("[xz] thres: " + str(self.counter1))
             self.counter1 += 1
 
             circle3Pos[3] = circle2Pos[3]
 
-        print("\n")
+        # print("\n")
 
         vector_circle1_circle2 = (circle2Pos - circle1Pos)
         vector_circle2_circle3 = (circle3Pos - circle2Pos)
@@ -179,27 +179,7 @@ class joint_estimation_1:
         cv2.imshow('Images with blob centers YZ', cv2.resize(image_with_centers, (400,400)))
         cv2.imwrite('robot_yz.jpg', image_with_centers)
 
-        # ===== Corrections =====
-        thres = 0
-        thres1 = 0
 
-        # if(circle3Pos[2] < circle2Pos[2]):
-        #     if (circle3Pos[3] < circle2Pos[3]):
-        #         circle3Pos[2] = circle2Pos[2]
-        #         circle3Pos[3] = circle2Pos[3]
-        #     else:
-        #         circle3Pos[2] = circle2Pos[3]
-        # if(circle3Pos[3] < circle2Pos[3]):
-        #     if (circle3Pos[2] < circle2Pos[2]):
-        #         circle3Pos[2] = circle2Pos[2]
-        #         circle3Pos[3] = circle2Pos[3]
-        #     else:
-        #         circle3Pos[3] = circle2Pos[2]
-
-        # if (abs(circle2Pos[1] - circle3Pos[1]) < thres and circle2Pos[0] - circle3Pos[0] > thres1):
-        #     circle3Pos[0] = circle2Pos[0]
-        # if (abs(circle2Pos[0] - circle3Pos[0]) < thres and circle2Pos[1] - circle3Pos[1] > thres1):
-        #     circle3Pos[1] = circle2Pos[1]
         # ===== Angles =====
 
         #print('=== ANGLES ===')
@@ -209,6 +189,8 @@ class joint_estimation_1:
         unit_vector2 = vector_circle3_circle4 / np.linalg.norm(vector_circle3_circle4)
         dot_1_2 = np.dot(unit_vector1, unit_vector2)
         ja4 = np.arccos(dot_1_2)
+
+        print(vector_circle3_circle4, "\n")
 
         #print([ja2, ja3, ja4])
         #print("\n")
