@@ -208,13 +208,33 @@ class joint_estimation_1:
 
         if circle4SmallAreas[1]:
             circle4Pos[0] = circle3Pos[0]
+        #rules below added by AR, those above by Patrick
+        if circle4SmallAreas[1]:
+            circle4Pos[2] = circle4Pos[3]
+        if circle3SmallAreas[1]:
+            circle3Pos[2] = circle3Pos[3]
 
         link2_vec = [circle3Pos[0] - circle2Pos[0], circle3Pos[2] - circle2Pos[2]]
         link3_vec = [circle4Pos[0] - circle3Pos[0], circle4Pos[2] - circle3Pos[2]]
 
+        vector_circle1_circle2 = (circle2Pos - circle1Pos)
+        vector_circle2_circle3 = (circle3Pos - circle2Pos)
+        vector_circle3_circle4 = (circle4Pos - circle3Pos)
+
         ja1 = - np.arctan2(circle3Pos[0] - circle1Pos[0], circle3Pos[1] - circle1Pos[1]) + 0.07
         ja3 = - np.arctan2(circle3Pos[1] - circle2Pos[1], circle3Pos[3] - circle2Pos[3]) - 0.07
-        ja4 = - np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2])
+        # ja4 = - np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2])
+
+        unit_vector1 = vector_circle2_circle3[[0,1,2]] / np.linalg.norm(vector_circle2_circle3[[0,1,2]])
+        unit_vector2 = vector_circle3_circle4[[0,1,2]] / np.linalg.norm(vector_circle3_circle4[[0,1,2]])
+        dot_1_2 = np.dot(unit_vector1, unit_vector2)
+        cross_1_2 = np.cross(vector_circle2_circle3[[0, 1, 2]], vector_circle3_circle4[[0,1,2]])
+        ja4 = np.arccos(dot_1_2)
+        if ja3 > 0 and cross_1_2[2] < 0:
+            ja4 = -ja4
+        if ja4 > np.math.pi / 2:
+            ja4 = np.math.pi / 2
+
 
         if len(self.previous_angles) == 0:
             self.previous_angles = [ja1, ja3, ja4]
