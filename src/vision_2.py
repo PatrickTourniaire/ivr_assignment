@@ -224,13 +224,13 @@ class joint_estimation_2:
         else:
             ja3 += 3.14
 
-        if (abs(self.previous_angles[1] - ja3) > 0.2):
-            ja3 = self.previous_angles[1]
+        # if (abs(self.previous_angles[1] - ja3) > 0.2):
+        #     ja3 = self.previous_angles[1]
 
-        if (abs(self.previous_angles[0] - ja1) > 1 and self.previous_angles[0] < ja1 and ja1 > 0):
-            ja1 -= 3.14
-        else:
-            ja1 += 3.14
+        # if (abs(self.previous_angles[0] - ja1) > 1 and self.previous_angles[0] < ja1 and ja1 > 0):
+        #     ja1 -= 3.14
+        # else:
+        #     ja1 += 3.14
 
         
         self.previous_angles = [ja1, ja3, ja4]
