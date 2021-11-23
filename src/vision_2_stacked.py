@@ -24,8 +24,6 @@ class joint_estimation_1:
             "link_4": 2.8           
         }
 
-        self.previous_angles = []
-
         self.RED_BLOB_HSV_COLOR_RANGE_BELOW = (0,50,50)
         self.RED_BLOB_HSV_COLOR_RANGE_UPPER = (20,255,255)
 
@@ -210,20 +208,12 @@ class joint_estimation_1:
         vector_circle2_circle3 = (circle3Pos - circle2Pos)
         vector_circle3_circle4 = (circle4Pos - circle3Pos)
 
-        ja2 = - np.arctan2(circle2Pos[0] - circle3Pos[0], circle2Pos[2] - (circle3Pos[2]-0.25))
-        ja3 = np.arctan2(circle2Pos[1] - circle3Pos[1], circle2Pos[2] - circle3Pos[2]-0.25)
-        ja4 = np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2]) - ja2
-
-        self.previous_angles.append([ja2, ja3, ja4])
-
-        if (abs(self.previous_angles[len(self.previous_angles) - 1][0] - ja2) > 0.2):
-            ja2 = (self.previous_angles[len(self.previous_angles) - 1][0] + ja2) / 2.0
-
-        if (abs(self.previous_angles[len(self.previous_angles) - 1][2] - ja4) > 0.2):
-            ja4 = (self.previous_angles[len(self.previous_angles) - 1][2] + ja4) / 2.0
+        ja1 = - np.arctan2(circle1Pos[0] - circle3Pos[0], circle1Pos[1] - circle3Pos[1])
+        ja3 = np.arctan2(circle2Pos[1] - circle3Pos[1], circle2Pos[2] - circle3Pos[2])
+        ja4 = np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2])
 
 
-        return np.array([0, ja2, ja3, ja4])
+        return np.array([ja1, 0, ja3, ja4])
     
 # call the class
 def main(args):
