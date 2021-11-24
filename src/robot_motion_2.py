@@ -15,15 +15,18 @@ class robot_motion:
         self.joint3_publisher = rospy.Publisher("/robot/joint3_position_controller/command", Float64, queue_size=10)
         self.joint4_publisher = rospy.Publisher("/robot/joint4_position_controller/command", Float64, queue_size=10)
         self.rate = rospy.Rate(100)
+        self.initial_time = rospy.get_time()
 
     def callback(self):
         while not rospy.is_shutdown():
-            t = rospy.get_time()
+            t = rospy.get_time() - self.initial_time
 
             self.joint1_package = Float64()
             self.joint1_package.data = pi * np.sin((pi / 28) * t)
+            # self.joint1_package.data = pi/2
             self.joint3_package = Float64()
             self.joint3_package.data = (pi / 2) * np.sin((pi / 20) * t)
+            # self.joint3_package.data = -pi/4
             self.joint4_package = Float64()
             self.joint4_package.data = (pi / 2) * np.sin((pi / 18) * t)
 

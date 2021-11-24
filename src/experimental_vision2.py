@@ -30,6 +30,15 @@ class joint_estimation_2:
         self.z_axis = np.array([0, 0, 1])
 
         self.previous_angles = []
+        
+        # signs for joint angle 1 and 3
+        self.ja_signs = [1, 1, 1]
+
+        #blue blob is changing ja3 sign
+        self.blue_blob_in_transition = True
+
+        #position of blue blob
+        self.link2_prev_pos = []
 
         self.RED_BLOB_HSV_COLOR_RANGE_BELOW = (0,50,50)
         self.RED_BLOB_HSV_COLOR_RANGE_UPPER = (20,255,255)
@@ -150,38 +159,25 @@ class joint_estimation_2:
         if (circle3Pos_img[2] > circle2Pos_img[2]):
             circle3Pos_img[2] = circle2Pos_img[2]
 
-        # if circle2SmallAreas_img[0]:
-        #     circle2Pos_img[2] = circle3Pos_img[2]
+        if circle2SmallAreas_img[0]:
+            circle2Pos_img[2] = circle3Pos_img[2]
 
-        # if circle2SmallAreas_img[1]:
-        #     circle2Pos_img[0] = circle3Pos_img[0]
+        if circle2SmallAreas_img[1]:
+            circle2Pos_img[0] = circle3Pos_img[0]
 
-        # if circle3SmallAreas_img[0]:
-        #     circle3Pos_img[1] = circle2Pos_img[1]
+        if circle3SmallAreas_img[0]:
+            circle3Pos_img[1] = circle2Pos_img[1]
 
-        # if circle3SmallAreas_img[1]:
-        #     circle3Pos_img[0] = circle2Pos_img[0]
+        if circle3SmallAreas_img[1]:
+            circle3Pos_img[0] = circle2Pos_img[0]
 
-        # if circle4SmallAreas_img[0]:
-        #     circle4Pos_img[1] = circle3Pos_img[1]
+        if circle4SmallAreas_img[0]:
+            circle4Pos_img[1] = circle3Pos_img[1]
 
-        # if circle4SmallAreas_img[1]:
-        #     circle4Pos_img[0] = circle3Pos_img[0]
+        if circle4SmallAreas_img[1]:
+            circle4Pos_img[0] = circle3Pos_img[0]
 
-        image_with_centers = cv2.circle(self.xz_image, (int(circle1Pos_img[0]), int(circle1Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[0]), int(circle2Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[0]), int(circle3Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[0]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
-
-        cv2.imshow('Images with blob centers XZ', cv2.resize(image_with_centers, (400,400)))
-        cv2.imwrite('robot_xz.jpg', image_with_centers)
-
-        image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[1]), int(circle3Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
-        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[1]), int(circle4Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
-
-        cv2.imshow('Images with blob centers YZ', cv2.resize(image_with_centers, (400,400)))
+        self.draw_circles_on_blobs(circle1Pos_img, circle2Pos_img, circle3Pos_img, circle4Pos_img)
 
 
         a = self.pixel2meter(yz_image)
@@ -192,10 +188,10 @@ class joint_estimation_2:
         circle3Pos, circle3SmallAreas = self.detect_color(yz_image, xz_image, "blue")[0], self.detect_color(yz_image, xz_image, "blue")[1] 
         circle4Pos, circle4SmallAreas = self.detect_color(yz_image, xz_image, "red")[0], self.detect_color(yz_image, xz_image, "red")[1]
        
-        circle1Pos = a * circle1Pos
-        circle2Pos = a * circle2Pos
-        circle3Pos = a * circle3Pos
-        circle4Pos = a * circle4Pos
+        # circle1Pos = a * circle1Pos
+        # circle2Pos = a * circle2Pos
+        # circle3Pos = a * circle3Pos
+        # circle4Pos = a * circle4Pos
         
         if (circle3Pos[2] > circle2Pos[2]):
             circle3Pos[2] = circle2Pos[2]
@@ -218,62 +214,113 @@ class joint_estimation_2:
         if circle4SmallAreas[1]:
             circle4Pos[0] = circle3Pos[0]
 
-        # link2_vec = [circle3Pos[0] - circle2Pos[0], circle3Pos[2] - circle2Pos[2]]
-        # link3_vec = [circle4Pos[0] - circle3Pos[0], circle4Pos[2] - circle3Pos[2]]
-
         link1 = (circle2Pos - circle1Pos)
+        link1[2] = -link1[2]
+        link1[3] = -link1[3]
         link2 = (circle3Pos - circle2Pos)
+        link2[2] = -link2[2]
+        link2[3] = -link2[3]
         link3 = (circle4Pos - circle3Pos)
+        link3[2] = -link3[2]
+        link3[3] = -link3[3]
+
+
+        # Literally the most crucial logic
+        blue_over_yellow = self.blue_over_yellow(circle2Pos, circle3Pos)
+        if blue_over_yellow and not(self.blue_blob_in_transition):
+            self.blue_blob_in_transition = True
+            # print('blue blob entered transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
+        elif not blue_over_yellow and self.blue_blob_in_transition:
+            self.blue_blob_in_transition = False
+            self.ja_signs[1] = self.ja_signs[1] * -1
+            # print('blue blob leaving transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
+
 
         z_to_use = 2
         # cross_v1_v2 = np.cross(link2[0:3], link1[0:3])
-        unit_link1 = link1[[0,1, z_to_use]] / np.linalg.norm(link1[[0,1, z_to_use]])
         unit_link2 = link2[[0,1,z_to_use]] / np.linalg.norm(link2[[0,1,z_to_use]])
-        cross_v1_v2 = np.cross(unit_link2, unit_link1)
-        unit_cross_v1_v2 = cross_v1_v2 / np.linalg.norm(cross_v1_v2)
-        dot_x_cross_v1_v2 = np.dot(unit_cross_v1_v2, self.x_axis)
-        ja1 = np.arccos(dot_x_cross_v1_v2)
-
-        # IF CROSS PRODUCT NOW POINTS TOWARDS NEGATIVE Y CHANGE THE SIGN OF JA1
-        # if unit_cross_v1_v2[1] < 0:
-        #     ja1 = -ja1
         
-        
-        
-        # print(self.x_axis)
-        # print(unit_cross_v1_v2)
-
-        # ja1 = - np.arctan2(circle3Pos[0] - circle1Pos[0], circle3Pos[1] - circle1Pos[1]) + 0.07
-        ja3 = - np.arctan2(circle3Pos[1] - circle2Pos[1], circle3Pos[3] - circle2Pos[3]) - 0.07
-        ja4 = - np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2])
-
-        if (circle3Pos[0] < 0 and circle3Pos[1] < 0):
-            print('blue in positive xy. ja1: {}, ja3: {}'.format(ja1, ja3)) 
-            ja3 = -ja3
-            ja1 = ja1 - np.math.pi
-        
-        if (circle3Pos[0] > 0 and circle3Pos[1] < 0):
-            ja3 = -ja3
-        
-        if len(self.previous_angles) == 0:
-            self.previous_angles = [ja1, ja3, ja4]
-
-        if ja3 > 0:
-            ja3 -= 3.14
+        if self.ja_signs[1] == -1:
+            cross_link1_z = np.cross(unit_link2, self.z_axis)
         else:
-            ja3 += 3.14
-
-        # if (abs(self.previous_angles[1] - ja3) > 0.2):
-        #     ja3 = self.previous_angles[1]
-
-        # if (abs(self.previous_angles[0] - ja1) > 1 and self.previous_angles[0] < ja1 and ja1 > 0):
-        #     ja1 -= 3.14
-        # else:
-        #     ja1 += 3.14
-
+            cross_link1_z = np.cross(self.z_axis, unit_link2)
         
-        self.previous_angles = [ja1, ja3, ja4]
+        unit_cross_link1_z = cross_link1_z / np.linalg.norm(cross_link1_z)
+        dot_x_cross_link1_z = np.dot(unit_cross_link1_z, self.x_axis)
+        ja1 = np.arccos(dot_x_cross_link1_z)
+    
+
+        #finding ja3
+        unit_link2 = link2[[0,1,z_to_use]] / np.linalg.norm(link2[[0,1,z_to_use]])
+        dot_link2_z = np.dot(self.z_axis, unit_link2)
+        ja3 = np.arccos(dot_link2_z)
+
+        # print(ja1, ja3)
+
+        unit_link3 = link3[[0, 1, z_to_use]] / np.linalg.norm(link3[[0, 1, z_to_use]])
+        dot_link3_link2 = np.dot(unit_link2, unit_link3)
+        cross_link2_link3 = np.cross(unit_link2, unit_link3)
+        ja4 = np.arccos(dot_link3_link2)
+        print(cross_link2_link3[2])
+
+
+
+        # finding ja4
+        # rule number one: as long as blue blob is in positive y, and the cross vector points downwards, the angle is positive
+
+        if (cross_link2_link3[2] > 0 and self.ja_signs[1] == -1) or (cross_link2_link3[2] < 0 and self.ja_signs[1] == 1):
+            self.ja_signs[2] = -1
+            print('condition executed')
+        else:
+            self.ja_signs[2] = 1
+        
+        ja1, ja3, ja4 = self.sign_correction(ja1, ja3, ja4)
+
+        self.previous_angles = [ja1, ja3, 0]
+        self.link2_prev_pos = link2
         return np.array([ja1, 0, ja3, ja4])
+    
+    def sign_correction(self, ja1, ja3, ja4):
+        return ja1 * self.ja_signs[0], ja3 * self.ja_signs[1], ja4 * self.ja_signs[2]
+    
+    def blue_over_yellow(self, yellow_blob_pos, blue_blob_pos):
+        threshold = 10
+        if (abs(blue_blob_pos[0] - yellow_blob_pos[0]) < threshold) and (abs(blue_blob_pos[1] - yellow_blob_pos[1]) < threshold):
+            return True
+        return False
+
+    def crossed_x_axis(self, blob_current_pos):
+        if len(self.link2_prev_pos) == 0:
+            return False
+        elif (self.link2_prev_pos[1] > 0 and blob_current_pos[1] > 0) or (self.link2_prev_pos[1] < 0 and blob_current_pos[1] < 0):
+            return False
+        else:
+            return True
+
+    def crossed_y_axis(self, blob_current_pos):
+        if len(self.link2_prev_pos) == 0:
+            return False
+        elif (self.link2_prev_pos[0] > 0 and blob_current_pos[0] > 0) or (self.link2_prev_pos[0] < 0 and blob_current_pos[0] < 0):
+            return False
+        else:
+
+            return True
+
+    def draw_circles_on_blobs(self, circle1Pos_img, circle2Pos_img, circle3Pos_img, circle4Pos_img):
+        image_with_centers = cv2.circle(self.xz_image, (int(circle1Pos_img[0]), int(circle1Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[0]), int(circle2Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[0]), int(circle3Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[0]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
+
+        cv2.imshow('Images with blob centers XZ', cv2.resize(image_with_centers, (400,400)))
+        cv2.imwrite('robot_xz.jpg', image_with_centers)
+
+        image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle3Pos_img[1]), int(circle3Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+        image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[1]), int(circle4Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
+
+        cv2.imshow('Images with blob centers YZ', cv2.resize(image_with_centers, (400,400)))
     
 # call the class
 def main(args):
