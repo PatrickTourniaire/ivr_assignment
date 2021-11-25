@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import re
 from genpy import message
 import roslib
 import sys
@@ -33,6 +34,9 @@ class joint_estimation_2:
         
         # signs for joint angle 1 and 3
         self.ja_signs = [1, 1, 1]
+
+        # number of times we have not allowed the angle to change
+        self.buffer_graph_smoothing = [0, 0, 0]
 
         #blue blob is changing ja3 sign
         self.blue_blob_in_transition = True
@@ -248,12 +252,18 @@ class joint_estimation_2:
         unit_cross_link1_z = cross_link1_z / np.linalg.norm(cross_link1_z)
         dot_x_cross_link1_z = np.dot(unit_cross_link1_z, self.x_axis)
         ja1 = np.arccos(dot_x_cross_link1_z)
+        
+        
+        # The logic that deserves your applause
+        self.update_sign_of_ja1(self.quadrant(link2))
+
     
 
         #finding ja3
         unit_link2 = link2[[0,1,z_to_use]] / np.linalg.norm(link2[[0,1,z_to_use]])
         dot_link2_z = np.dot(self.z_axis, unit_link2)
         ja3 = np.arccos(dot_link2_z)
+        
 
         # print(ja1, ja3)
 
@@ -261,7 +271,8 @@ class joint_estimation_2:
         dot_link3_link2 = np.dot(unit_link2, unit_link3)
         cross_link2_link3 = np.cross(unit_link2, unit_link3)
         ja4 = np.arccos(dot_link3_link2)
-        print(cross_link2_link3[2])
+        
+        
 
 
 
@@ -276,18 +287,66 @@ class joint_estimation_2:
         
         ja1, ja3, ja4 = self.sign_correction(ja1, ja3, ja4)
 
-        self.previous_angles = [ja1, ja3, 0]
+        ja4 = self.smooth_angle(ja4, 2)
+        ja3 = self.smooth_angle(ja3, 1)
+        ja1 = self.smooth_angle(ja1, 0)
+
+
+        if len(self.previous_angles) is not 0:
+            print (self.previous_angles[0] - ja1, self.previous_angles[1] - ja3, self.previous_angles[2] - ja4)
+        self.previous_angles = [ja1, ja3, ja4]
         self.link2_prev_pos = link2
         return np.array([ja1, 0, ja3, ja4])
     
     def sign_correction(self, ja1, ja3, ja4):
         return ja1 * self.ja_signs[0], ja3 * self.ja_signs[1], ja4 * self.ja_signs[2]
+
+    def smooth_angle(self, angle, angle_index):
+        buffer_val = self.buffer_graph_smoothing[angle_index]
+        if buffer_val > 0:
+            thresh = buffer_val * 0.3
+        else:
+            thresh = 0.2
+        if len(self.previous_angles) == 0:
+            return angle
+        if abs(angle - self.previous_angles[angle_index]) > thresh:
+            self.buffer_graph_smoothing[angle_index] += 1
+            return self.previous_angles[angle_index]
+        else:
+            self.buffer_graph_smoothing[angle_index] = 0
+            return angle
     
     def blue_over_yellow(self, yellow_blob_pos, blue_blob_pos):
         threshold = 10
         if (abs(blue_blob_pos[0] - yellow_blob_pos[0]) < threshold) and (abs(blue_blob_pos[1] - yellow_blob_pos[1]) < threshold):
             return True
         return False
+    
+    def update_sign_of_ja1(self, quadrant):
+        if quadrant == 1:
+            self.ja_signs[0] = self.ja_signs[1]
+        elif quadrant == 2:
+            self.ja_signs[0] =  -1 * self.ja_signs[1]
+        elif quadrant == 3:
+            self.ja_signs[0] =  -1 * self.ja_signs[1]
+        elif quadrant == 4:
+            self.ja_signs[0] = self.ja_signs[1]
+    
+    def quadrant(self, blue_blob_pos):
+        # where x and y are positive
+        if blue_blob_pos[0] > 0 and blue_blob_pos[1] > 0:
+            return 1
+        elif blue_blob_pos[0] < 0 and blue_blob_pos[1] > 0:
+            return 2
+        elif blue_blob_pos[0] < 0 and blue_blob_pos[1] < 0:
+            return 3
+        elif blue_blob_pos[0] > 0 and blue_blob_pos[1] < 0:
+            return 4
+        else:
+            # //TODO: remove this else statement
+            print('quandrant can not be correctly determined.')
+
+
 
     def crossed_x_axis(self, blob_current_pos):
         if len(self.link2_prev_pos) == 0:
