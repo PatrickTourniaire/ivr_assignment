@@ -48,9 +48,11 @@ class control:
         dh_params = [
             [math.radians(90), 0, self.link_lengths["link_1"], ja1],
             [math.radians(90), 0, 0, math.radians(90)],
-            [-math.radians(90), self.link_lengths["link_3"], 0, ja3],
+            [math.radians(90), self.link_lengths["link_3"], 0, ja3],
             [0, self.link_lengths["link_4"], 0, ja4]
         ]
+
+        print(dh_params)
 
         A_1_0 = np.array(self.calculate_transformation(dh_params[0]))
         A_2_1 = np.array(self.calculate_transformation(dh_params[1]))
@@ -60,7 +62,7 @@ class control:
         K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
         end_effector_pos = [K[0][3], K[1][3], K[2][3]]
 
-        print("true states: " + end_effector_pos)
+        print(end_effector_pos)
 
 
     def ja1_callback(self, ja1):
@@ -95,7 +97,7 @@ class control:
             dh_params = [
                 [math.radians(90), 0, self.link_lengths["link_1"], self.ja1_data],
                 [math.radians(90), 0, 0, math.radians(90)],
-                [-math.radians(90), self.link_lengths["link_3"], 0, self.ja3_data],
+                [math.radians(90), self.link_lengths["link_3"], 0, self.ja3_data],
                 [0, self.link_lengths["link_4"], 0, self.ja4_data]
             ]
 
@@ -107,7 +109,7 @@ class control:
             A_4_3 = np.array(self.calculate_transformation(dh_params[3]))
 
             K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
-            end_effector_pos = [K[0][3], K[1][3], K[2][3]]
+            end_effector_pos = [-K[0][3], -K[1][3], K[2][3]]
 
             print(end_effector_pos)
 

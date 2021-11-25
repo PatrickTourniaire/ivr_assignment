@@ -184,8 +184,10 @@ class joint_estimation_2:
 
 
         a = self.pixel2meter(yz_image)
-
+        
+        print("=== END EFFECTOR POSITION ===")
         print('end_effector_pos: ' + str(a * (circle1Pos_img - circle4Pos_img)))
+        print("=============================")
         
         # Obtain the centre of each coloured blob 
         circle1Pos, circle1SmallAreas = self.detect_color(yz_image, xz_image, "green")[0], self.detect_color(yz_image, xz_image, "green")[1]
@@ -297,6 +299,9 @@ class joint_estimation_2:
             print (self.previous_angles[0] - ja1, self.previous_angles[1] - ja3, self.previous_angles[2] - ja4)
         self.previous_angles = [ja1, ja3, ja4]
         self.link2_prev_pos = link2
+
+
+
         return np.array([ja1, 0, ja3, ja4])
     
     def sign_correction(self, ja1, ja3, ja4):
