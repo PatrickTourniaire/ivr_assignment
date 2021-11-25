@@ -26,15 +26,6 @@ class control:
             "link_4": 2.8           
         }
 
-        self.dh_cols = {
-            "alpha": 0, 
-            "a": 1, 
-            "d": 2, 
-            "theta": 3
-        }
-
-        self.rate = rospy.Rate(70)  # 50hz
-
         self.ja1_data = None
         self.ja3_data = None
         self.ja4_data = None
@@ -43,20 +34,38 @@ class control:
         self.ja3_data_updated = False
         self.ja4_data_updated = False
 
-        self.ja1 = rospy.Subscriber('/robot/joint1_position_controller/command', Float64, self.ja1_callback)
-        self.ja3 = rospy.Subscriber('/robot/joint3_position_controller/command', Float64, self.ja3_callback)
-        self.ja4 = rospy.Subscriber('/robot/joint4_position_controller/command', Float64, self.ja4_callback)
+        self.ja1 = rospy.Subscriber('joint_angle_1', Float64, self.ja1_callback)
+        self.ja3 = rospy.Subscriber('joint_angle_3', Float64, self.ja3_callback)
+        self.ja4 = rospy.Subscriber('joint_angle_4', Float64, self.ja4_callback)
+
+        self.ja_test = rospy.Subscriber('/robot/joint_states/position', Float64MultiArray, self.callback_test)
 
         self.end_effector_publisher = rospy.Publisher("/end_effector", Float64MultiArray, queue_size=10)
+    
+    def callback_test(self, jas):
+        ja1, _, ja3, ja4 = jas.data
 
-        # self.ja1 = message_filters.Subscriber('/robot/joint1_position_controller/command', Float64)
-        # self.ja3 = message_filters.Subscriber('/robot/joint3_position_controller/command', Float64)
-        # self.ja4 = message_filters.Subscriber('/robot/joint4_position_controller/command', Float64)
+        dh_params = [
+            [math.radians(90), 0, self.link_lengths["link_1"], ja1],
+            [math.radians(90), 0, 0, math.radians(90)],
+            [-math.radians(90), self.link_lengths["link_3"], 0, ja3],
+            [0, self.link_lengths["link_4"], 0, ja4]
+        ]
 
-        # self.ts = message_filters.ApproximateTimeSynchronizer([self.ja1, self.ja3, self.ja4], queue_size=10, slop=0.1, allow_headerless=True)
-        # self.ts.registerCallback(self.callback)
-        
+        A_1_0 = np.array(self.calculate_transformation(dh_params[0]))
+        A_2_1 = np.array(self.calculate_transformation(dh_params[1]))
+        A_3_2 = np.array(self.calculate_transformation(dh_params[2]))
+        A_4_3 = np.array(self.calculate_transformation(dh_params[3]))
+
+        K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
+        end_effector_pos = [K[0][3], K[1][3], K[2][3]]
+
+        print("true states: " + end_effector_pos)
+
+
     def ja1_callback(self, ja1):
+        if math.isnan(ja1.data):
+            ja1.data = 0
         self.ja1_data = ja1.data
         self.ja1_data_updated = True
 
@@ -80,55 +89,17 @@ class control:
             for i, y in enumerate(x):
                 print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
             print("")
-    
-    # def callback(self, ja1, ja3, ja4):
-    #     dh_params = [[0, 0, 0, 0]] * len(self.link_lengths.keys())
-
-    #     dh_params[0][0] = math.radians(90)
-    #     dh_params[0][2] = self.link_lengths["link_1"]
-    #     dh_params[0][3] = ja1.data + math.radians(180)
-
-    #     dh_params[1][0] = math.radians(90)
-    #     dh_params[1][3] = math.radians(180)
-
-    #     dh_params[2][0] = math.radians(-90)
-    #     dh_params[2][1] = self.link_lengths["link_3"]
-    #     dh_params[2][3] = ja3.data
-
-    #     dh_params[3][1] = self.link_lengths["link_4"]
-    #     dh_params[3][3] = ja4.data
-
-    #     transformation_1_0 = self.calculate_transformation(dh_params[0])
-    #     transformation_2_1 = self.calculate_transformation(dh_params[1])
-    #     transformation_3_2 = self.calculate_transformation(dh_params[2])
-    #     transformation_4_3 = self.calculate_transformation(dh_params[3])
-
-    #     temp_a = np.matmul(transformation_1_0, transformation_2_1)
-    #     temp_b = np.matmul(temp_a, transformation_3_2)
-    #     temp_c = np.matmul(temp_b, transformation_4_3)
-
-    #     print('=== FK result ===')
-    #     end_effector_pos = [temp_c[0][3], temp_c[1][3], temp_c[2][3]]
-
-    #     print(end_effector_pos)
-
-    #     self.end_effector_pos = Float64MultiArray()
-    #     self.end_effector_pos.data = end_effector_pos
-    #     self.end_effector_publisher.publish(self.end_effector_pos)
 
     def callback(self):
         if (self.ja1_data_updated and self.ja3_data_updated and self.ja4_data_updated):
             dh_params = [
                 [math.radians(90), 0, self.link_lengths["link_1"], self.ja1_data],
                 [math.radians(90), 0, 0, math.radians(90)],
-                [math.radians(90), self.link_lengths["link_3"], 0, self.ja3_data],
+                [-math.radians(90), self.link_lengths["link_3"], 0, self.ja3_data],
                 [0, self.link_lengths["link_4"], 0, self.ja4_data]
             ]
 
-            # print(dh_params[0])
-            # print(dh_params[1])
-            # print(dh_params[2])
-            # print(dh_params[3])
+            print(dh_params)
 
             A_1_0 = np.array(self.calculate_transformation(dh_params[0]))
             A_2_1 = np.array(self.calculate_transformation(dh_params[1]))
@@ -136,11 +107,8 @@ class control:
             A_4_3 = np.array(self.calculate_transformation(dh_params[3]))
 
             K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
-
-            print('=== FK result ===')
-            print(K)
-            print('=== End effector ===')
             end_effector_pos = [K[0][3], K[1][3], K[2][3]]
+
             print(end_effector_pos)
 
             # print(self.matprint(temp_c))
@@ -151,8 +119,6 @@ class control:
             self.ja1_data_updated = False
             self.ja3_data_updated = False
             self.ja4_data_updated = False
-
-            self.rate.sleep()
         
 
     def calculate_transformation(self, dh_param_row):
@@ -188,11 +154,6 @@ class control:
 
         return rot_theta @ trans_d @ trans_a @ rot_alpha
             
-
-
-    
-
-    
 # call the class
 def main(args):
     control_1 = control()

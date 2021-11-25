@@ -154,7 +154,6 @@ class joint_estimation_2:
         circle2Pos_img, circle2SmallAreas_img = self.detect_color(yz_image, xz_image, "yellow") 
         circle3Pos_img, circle3SmallAreas_img = self.detect_color(yz_image, xz_image, "blue") 
         circle4Pos_img, circle4SmallAreas_img = self.detect_color(yz_image, xz_image, "red")
-        #print(circle1Pos_img)
 
         if (circle3Pos_img[2] > circle2Pos_img[2]):
             circle3Pos_img[2] = circle2Pos_img[2]
@@ -181,6 +180,8 @@ class joint_estimation_2:
 
 
         a = self.pixel2meter(yz_image)
+
+        print('end_effector_pos: ' + str(a * (circle1Pos_img - circle4Pos_img)))
         
         # Obtain the centre of each coloured blob 
         circle1Pos, circle1SmallAreas = self.detect_color(yz_image, xz_image, "green")[0], self.detect_color(yz_image, xz_image, "green")[1]
