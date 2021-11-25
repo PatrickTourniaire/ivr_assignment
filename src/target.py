@@ -26,6 +26,7 @@ def target_publisher():
         tz = 1.0 * np.sin(cur_time * np.pi / 18) + 4.5
         target_pos = Float64MultiArray()
         target_pos.data = np.array([tx, ty, tz])
+        print([tx, ty, tz])
         target_pos_pub.publish(target_pos)
         rate.sleep()
 

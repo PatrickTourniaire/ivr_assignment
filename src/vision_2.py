@@ -212,6 +212,7 @@ class joint_estimation_2:
         link2_vec = [circle3Pos[0] - circle2Pos[0], circle3Pos[2] - circle2Pos[2]]
         link3_vec = [circle4Pos[0] - circle3Pos[0], circle4Pos[2] - circle3Pos[2]]
 
+
         ja1 = - np.arctan2(circle3Pos[0] - circle1Pos[0], circle3Pos[1] - circle1Pos[1]) + 0.07
         ja3 = - np.arctan2(circle3Pos[1] - circle2Pos[1], circle3Pos[3] - circle2Pos[3]) - 0.07
         ja4 = - np.arctan2(circle3Pos[0] - circle4Pos[0], circle3Pos[2] - circle4Pos[2])
