@@ -38,32 +38,7 @@ class control:
         self.ja3 = rospy.Subscriber('joint_angle_3', Float64, self.ja3_callback)
         self.ja4 = rospy.Subscriber('joint_angle_4', Float64, self.ja4_callback)
 
-        self.ja_test = rospy.Subscriber('/robot/joint_states/position', Float64MultiArray, self.callback_test)
-
         self.end_effector_publisher = rospy.Publisher("/end_effector", Float64MultiArray, queue_size=10)
-    
-    def callback_test(self, jas):
-        ja1, _, ja3, ja4 = jas.data
-
-        dh_params = [
-            [math.radians(90), 0, self.link_lengths["link_1"], ja1],
-            [math.radians(90), 0, 0, math.radians(90)],
-            [math.radians(90), self.link_lengths["link_3"], 0, ja3],
-            [0, self.link_lengths["link_4"], 0, ja4]
-        ]
-
-        print(dh_params)
-
-        A_1_0 = np.array(self.calculate_transformation(dh_params[0]))
-        A_2_1 = np.array(self.calculate_transformation(dh_params[1]))
-        A_3_2 = np.array(self.calculate_transformation(dh_params[2]))
-        A_4_3 = np.array(self.calculate_transformation(dh_params[3]))
-
-        K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
-        end_effector_pos = [K[0][3], K[1][3], K[2][3]]
-
-        print(end_effector_pos)
-
 
     def ja1_callback(self, ja1):
         if math.isnan(ja1.data):
@@ -84,13 +59,6 @@ class control:
         self.ja4_data_updated = True
 
         self.callback()
-    
-    def matprint(self, mat, fmt="g"):
-        col_maxes = [max([len(("{:"+fmt+"}").format(x)) for x in col]) for col in mat.T]
-        for x in mat:
-            for i, y in enumerate(x):
-                print(("{:"+str(col_maxes[i])+fmt+"}").format(y), end="  ")
-            print("")
 
     def callback(self):
         if (self.ja1_data_updated and self.ja3_data_updated and self.ja4_data_updated):
@@ -101,8 +69,6 @@ class control:
                 [0, self.link_lengths["link_4"], 0, self.ja4_data]
             ]
 
-            print(dh_params)
-
             A_1_0 = np.array(self.calculate_transformation(dh_params[0]))
             A_2_1 = np.array(self.calculate_transformation(dh_params[1]))
             A_3_2 = np.array(self.calculate_transformation(dh_params[2]))
@@ -111,7 +77,9 @@ class control:
             K = A_1_0 @ A_2_1 @ A_3_2 @ A_4_3
             end_effector_pos = [-K[0][3], -K[1][3], K[2][3]]
 
+            print("=== FK END EFFECTOR ===")
             print(end_effector_pos)
+            print("=======================")
 
             # print(self.matprint(temp_c))
             self.end_effector_pos = Float64MultiArray()
