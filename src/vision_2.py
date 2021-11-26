@@ -33,6 +33,8 @@ class joint_estimation_2:
         # Last known configuration of the system. Initially empty
         # index 0: ja1, index 1: ja3, index2: ja4
         self.last_known_ja = []
+
+        self.time = rospy.get_time()
         
         # signs for joint angle 1, 3, 4.
         self.ja_signs = [1, 1, 1]
@@ -252,34 +254,25 @@ class joint_estimation_2:
         link3[2] = -link3[2]
         link3[3] = -link3[3]
 
-
-        # Checks if blue blob is over yellow
-        blue_over_yellow = self.blue_over_yellow(circle2Pos, circle3Pos)
-        if blue_over_yellow and not(self.blue_blob_in_transition):
-            self.blue_blob_in_transition = True
-            # print('blue blob entered transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
-        # if it was over yellow previously and is not anymore, this means that sign of ja3 has changed.
-        elif not blue_over_yellow and self.blue_blob_in_transition:
-            self.blue_blob_in_transition = False
-            self.ja_signs[1] = self.ja_signs[1] * -1
-            # print('blue blob leaving transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
+        # sign of ja3 based on position of blue blob
+        self.ja_signs[1] = self.determine_sign_of_ja3(link2)
 
         # which of the z co-ordinates from two images to use
         z_to_use = 2
 
         #unit vector of link2
         unit_link2 = link2[[0,1,z_to_use]] / np.linalg.norm(link2[[0,1,z_to_use]])
-        
-        if self.ja_signs[1] == -1:
-            #cross vector between link 1 and z axis
-            cross_link1_z = np.cross(unit_link2, self.z_axis)
+        # cross product of link 2 and z axis
+        cross_link2_z = np.cross(self.z_axis, unit_link2)
+        # unit vector of cross_link2_z
+        unit_cross_link2_z = cross_link2_z / np.linalg.norm(cross_link2_z)
+
+        quad_blue_blob = self.quadrant(link2)
+        if quad_blue_blob == 1 or quad_blue_blob == 2:
+            dot_ja1 = np.dot(unit_cross_link2_z, -self.x_axis)
         else:
-            # cross vector between link1 and z axis
-            cross_link1_z = np.cross(self.z_axis, unit_link2)
-        # unit vector of cross_link1_z
-        unit_cross_link1_z = cross_link1_z / np.linalg.norm(cross_link1_z)
-        dot_x_cross_link1_z = np.dot(unit_cross_link1_z, self.x_axis)
-        ja1 = np.arccos(dot_x_cross_link1_z)
+            dot_ja1 = np.dot(unit_cross_link2_z, self.x_axis)
+        ja1 = np.arccos(dot_ja1)
         
         # Update the sign of ja1 based on which quadrant blue blob is in right now
         self.update_sign_of_ja1(self.quadrant(link2))
@@ -298,21 +291,24 @@ class joint_estimation_2:
         ja4 = np.arccos(dot_link3_link2)
     
         # sign of ja4
-        # as long as blue blob is in positive y, and the cross vector points downwards, or the converse, the angle is positive
-        if (cross_link2_link3[2] > 0 and self.ja_signs[1] == -1) or (cross_link2_link3[2] < 0 and self.ja_signs[1] == 1):
-            self.ja_signs[2] = -1
-            print('condition executed')
-        else:
+        # as long as blue blob is in positive y, and the cross product and link2 and link3 points 
+        # downwards, or the converse, the angle is positive
+        quad_blue_blob = self.quadrant(circle3Pos)
+        if (cross_link2_link3[2] > 0 and (quad_blue_blob == 1  or quad_blue_blob == 2)) or (cross_link2_link3[2] < 0 and (quad_blue_blob == 3  or quad_blue_blob == 4)):
             self.ja_signs[2] = 1
+        else:
+            self.ja_signs[2] = -1
 
         # assign proper signs to every angle. 
         # The signs have been determined earlier in this method.
         ja1, ja3, ja4 = self.sign_correction(ja1, ja3, ja4)
 
-        # Smooth the graph and get rid of random spikes.
-        ja4 = self.smooth_angle(ja4, 2)
-        ja3 = self.smooth_angle(ja3, 1)
-        ja1 = self.smooth_angle(ja1, 0)
+        # Optional smoothing of the graph to get rid of random 
+        # spikes. Turned off for analysing edge cases
+
+        # ja4 = self.smooth_angle(ja4, 2)
+        # ja3 = self.smooth_angle(ja3, 1)
+        # ja1 = self.smooth_angle(ja1, 0)
 
         # Update last known Joint angles with angles calculated in this iteration
         self.last_known_ja = [ja1, ja3, ja4]
@@ -331,26 +327,30 @@ class joint_estimation_2:
     # or the value calculated from the previous iteration should be used
     def smooth_angle(self, angle, angle_index):
         buffer_val = self.buffer_graph_smoothing[angle_index]
+        spike_thresh = 0.2
+
         if buffer_val > 0:
             thresh = buffer_val * 0.3
         else:
             thresh = 0.2
-        if len(self.last_known_ja) == 0:
+        if len(self.previous_angles) == 0:
             return angle
-        if abs(angle - self.last_known_ja[angle_index]) > thresh:
+            #Allow to shift from one quadrant to another
+        if abs(self.previous_angles[angle_index]) - abs(angle) < spike_thresh:
+            return angle
+        if abs(angle - self.previous_angles[angle_index]) > thresh:
             self.buffer_graph_smoothing[angle_index] += 1
-            return self.last_known_ja[angle_index]
+            return self.previous_angles[angle_index]
         else:
             self.buffer_graph_smoothing[angle_index] = 0
             return angle
     
-
-    # Determines if the blue blob is over yellow blob in any given iteration
-    def blue_over_yellow(self, yellow_blob_pos, blue_blob_pos):
-        threshold = 10
-        if (abs(blue_blob_pos[0] - yellow_blob_pos[0]) < threshold) and (abs(blue_blob_pos[1] - yellow_blob_pos[1]) < threshold):
-            return True
-        return False
+    def determine_sign_of_ja3(self, blue_blob_pos):
+        quad_blue_blob = self.quadrant(blue_blob_pos)
+        if quad_blue_blob == 1 or quad_blue_blob == 2:
+            return -1
+        else:
+            return 1
     
 
     # Assign a sign to joint angle 1 based on the position of 
@@ -391,7 +391,10 @@ class joint_estimation_2:
         image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[0]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
 
         cv2.imshow('Images with blob centers XZ', cv2.resize(image_with_centers, (400,400)))
-        cv2.imwrite('robot_xz.jpg', image_with_centers)
+        # curr_time = rospy.get_time()
+        # if (curr_time - self.time > 2):
+        #     self.time = curr_time
+        #     cv2.imwrite('./frames_robot_movement/' + str(curr_time) + '.png', self.xz_image) 
 
         image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
         image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
