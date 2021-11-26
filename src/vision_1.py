@@ -327,7 +327,6 @@ class joint_estimation_2:
         image_with_centers = cv2.circle(image_with_centers, (int(circle4Pos_img[0]), int(circle4Pos_img[2])), 2, (255, 255, 255), cv2.FILLED)
 
         cv2.imshow('Images with blob centers XZ', cv2.resize(image_with_centers, (400,400)))
-        cv2.imwrite('robot_xz.jpg', image_with_centers)
 
         image_with_centers = cv2.circle(self.yz_image, (int(circle1Pos_img[1]), int(circle1Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
         image_with_centers = cv2.circle(image_with_centers, (int(circle2Pos_img[1]), int(circle2Pos_img[3])), 2, (255, 255, 255), cv2.FILLED)
