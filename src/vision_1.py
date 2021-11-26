@@ -253,7 +253,6 @@ class joint_estimation_2:
 
 
         if circle3SmallAreas[1] or ((abs(circle3Pos[0] - circle2Pos[0]) < 15) and abs(circle3Pos[2] - circle2Pos[2]) < 15):
-            print('using last known')
             ja2 = np.math.pi
         else:
             ja2 = - np.arctan2(circle2Pos[0] - circle3Pos[0], circle2Pos[2] - circle3Pos[2])
