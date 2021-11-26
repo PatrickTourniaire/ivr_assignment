@@ -36,6 +36,7 @@ class joint_estimation_2:
         self.ja_signs = [1, 1, 1]
 
         # number of times we have not allowed the angle to change
+        # index 0: ja1, index1: ja3, and index 2: ja4
         self.buffer_graph_smoothing = [0, 0, 0]
 
         #blue blob is changing ja3 sign
@@ -184,11 +185,7 @@ class joint_estimation_2:
 
 
         a = self.pixel2meter(yz_image)
-        
-        print("=== END EFFECTOR POSITION ===")
-        print('end_effector_pos: ' + str(a * (circle1Pos_img - circle4Pos_img)))
-        print("=============================")
-        
+      
         # Obtain the centre of each coloured blob 
         circle1Pos, circle1SmallAreas = self.detect_color(yz_image, xz_image, "green")[0], self.detect_color(yz_image, xz_image, "green")[1]
         circle2Pos, circle2SmallAreas = self.detect_color(yz_image, xz_image, "yellow")[0], self.detect_color(yz_image, xz_image, "yellow")[1]
@@ -222,6 +219,7 @@ class joint_estimation_2:
             circle4Pos[0] = circle3Pos[0]
 
         link1 = (circle2Pos - circle1Pos)
+        # bec z is points upwards in the real worlds but points downwards in the image.
         link1[2] = -link1[2]
         link1[3] = -link1[3]
         link2 = (circle3Pos - circle2Pos)
@@ -232,6 +230,7 @@ class joint_estimation_2:
         link3[3] = -link3[3]
 
 
+
         # Literally the most crucial logic
         blue_over_yellow = self.blue_over_yellow(circle2Pos, circle3Pos)
         if blue_over_yellow and not(self.blue_blob_in_transition):
@@ -239,26 +238,34 @@ class joint_estimation_2:
             # print('blue blob entered transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
         elif not blue_over_yellow and self.blue_blob_in_transition:
             self.blue_blob_in_transition = False
-            self.ja_signs[1] = self.ja_signs[1] * -1
+            self.ja_signs[1] = self.determine_sign_of_ja3(link2)
             # print('blue blob leaving transition mode. sign of ja3: {}'.format(self.ja_signs[1]))
 
-
+        self.ja_signs[1] = self.determine_sign_of_ja3(link2)
         z_to_use = 2
         # cross_v1_v2 = np.cross(link2[0:3], link1[0:3])
         unit_link2 = link2[[0,1,z_to_use]] / np.linalg.norm(link2[[0,1,z_to_use]])
-        
-        if self.ja_signs[1] == -1:
-            cross_link1_z = np.cross(unit_link2, self.z_axis)
+
+        cross_link2_z = np.cross(self.z_axis, unit_link2)
+        unit_cross_link2_z = cross_link2_z / np.linalg.norm(cross_link2_z)
+        quad_blue_blob = self.quadrant(link2)
+        print('quadrant of blue blob is: {} and cross is {}'.format(quad_blue_blob, unit_cross_link2_z))
+        if quad_blue_blob == 1 or quad_blue_blob == 2:
+            dot_ja1 = np.dot(unit_cross_link2_z, -self.x_axis)
+            ja1 = np.arctan2(abs(link2[0]), abs(link2[1]))
         else:
-            cross_link1_z = np.cross(self.z_axis, unit_link2)
-        
-        unit_cross_link1_z = cross_link1_z / np.linalg.norm(cross_link1_z)
-        dot_x_cross_link1_z = np.dot(unit_cross_link1_z, self.x_axis)
-        ja1 = np.arccos(dot_x_cross_link1_z)
+            dot_ja1 = np.dot(unit_cross_link2_z, self.x_axis)
+            ja1 = np.arctan2(abs(link2[1]), abs(link2[0]))
+        ja1 = np.arccos(dot_ja1)
+        print(np.arccos(dot_ja1))
+
+
         
         
         # The logic that deserves your applause
         self.update_sign_of_ja1(self.quadrant(link2))
+        print('quadrant of blue blob is: {} and cross is {} and the sign is {}'
+            .format(quad_blue_blob, unit_cross_link2_z, self.ja_signs[0]))
 
     
 
@@ -278,25 +285,27 @@ class joint_estimation_2:
         
 
 
-
+        quad_blue_blob = self.quadrant(circle3Pos)
         # finding ja4
         # rule number one: as long as blue blob is in positive y, and the cross vector points downwards, the angle is positive
 
-        if (cross_link2_link3[2] > 0 and self.ja_signs[1] == -1) or (cross_link2_link3[2] < 0 and self.ja_signs[1] == 1):
-            self.ja_signs[2] = -1
-            print('condition executed')
-        else:
+        # if (cross_link2_link3[2] > 0 and self.ja_signs[1] == -1) or (cross_link2_link3[2] < 0 and self.ja_signs[1] == 1):
+        #     self.ja_signs[2] = -1
+        #     print('condition executed')
+        # else:
+        #     self.ja_signs[2] = 1
+        if (cross_link2_link3[2] > 0 and (quad_blue_blob == 1  or quad_blue_blob == 2)) or (cross_link2_link3[2] < 0 and (quad_blue_blob == 3  or quad_blue_blob == 4)):
             self.ja_signs[2] = 1
+        else:
+            self.ja_signs[2] = -1
         
         ja1, ja3, ja4 = self.sign_correction(ja1, ja3, ja4)
 
-        ja4 = self.smooth_angle(ja4, 2)
-        ja3 = self.smooth_angle(ja3, 1)
-        ja1 = self.smooth_angle(ja1, 0)
+        # ja4 = self.smooth_angle(ja4, 2)
+        # ja3 = self.smooth_angle(ja3, 1)
+        # ja1 = self.smooth_angle(ja1, 0)
 
 
-        if len(self.previous_angles) is not 0:
-            print (self.previous_angles[0] - ja1, self.previous_angles[1] - ja3, self.previous_angles[2] - ja4)
         self.previous_angles = [ja1, ja3, ja4]
         self.link2_prev_pos = link2
 
@@ -309,6 +318,11 @@ class joint_estimation_2:
 
     def smooth_angle(self, angle, angle_index):
         buffer_val = self.buffer_graph_smoothing[angle_index]
+        spike_thresh = 0.2
+
+        #Allow to shift from one quadrant to another
+        if abs(self.previous_angles[angle_index]) - abs(angle) < spike_thresh:
+            return angle
         if buffer_val > 0:
             thresh = buffer_val * 0.3
         else:
@@ -350,7 +364,13 @@ class joint_estimation_2:
             return 4
         else:
             # //TODO: remove this else statement
-            print('quandrant can not be correctly determined.')
+            print('')
+    def determine_sign_of_ja3(self, blue_blob_pos):
+        quad_blue_blob = self.quadrant(blue_blob_pos)
+        if quad_blue_blob == 1 or quad_blue_blob == 2:
+            return -1
+        else:
+            return 1
 
 
 
