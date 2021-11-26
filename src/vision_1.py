@@ -53,9 +53,9 @@ class joint_estimation_2:
         self.YELLOW_BLOB_HSV_COLOR_RANGE_UPPER = (40,255,255)
 
         # Topics on which JAs will be published
-        self.joint_angle_2 = rospy.Publisher('joint_angle_2', Float64, queue_size=10)
-        self.joint_angle_3 = rospy.Publisher('joint_angle_3', Float64, queue_size=10)
-        self.joint_angle_4 = rospy.Publisher('joint_angle_4', Float64, queue_size=10)
+        self.joint_angle_2_pub = rospy.Publisher('joint_angle_2', Float64, queue_size=10)
+        self.joint_angle_3_pub = rospy.Publisher('joint_angle_3', Float64, queue_size=10)
+        self.joint_angle_4_pub = rospy.Publisher('joint_angle_4', Float64, queue_size=10)
 
         self.image_sub1 = message_filters.Subscriber('/camera1/robot/image_raw', Image)
         self.image_sub2 = message_filters.Subscriber('/camera2/robot/image_raw', Image)
@@ -74,9 +74,9 @@ class joint_estimation_2:
         self.joint_4 = Float64()
         self.joint_4.data = angles[3]
 
-        self.joint_angle_2.publish(self.joint_2)
-        self.joint_angle_3.publish(self.joint_3)
-        self.joint_angle_4.publish(self.joint_4)
+        self.joint_angle_2_pub.publish(self.joint_2)
+        self.joint_angle_3_pub.publish(self.joint_3)
+        self.joint_angle_4_pub.publish(self.joint_4)
 
 
     def callback(self, image1, image2):
