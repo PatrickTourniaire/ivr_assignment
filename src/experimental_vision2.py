@@ -301,9 +301,9 @@ class joint_estimation_2:
         
         ja1, ja3, ja4 = self.sign_correction(ja1, ja3, ja4)
 
-        # ja4 = self.smooth_angle(ja4, 2)
-        # ja3 = self.smooth_angle(ja3, 1)
-        # ja1 = self.smooth_angle(ja1, 0)
+        ja4 = self.smooth_angle(ja4, 2)
+        ja3 = self.smooth_angle(ja3, 1)
+        ja1 = self.smooth_angle(ja1, 0)
 
 
         self.previous_angles = [ja1, ja3, ja4]
@@ -320,14 +320,14 @@ class joint_estimation_2:
         buffer_val = self.buffer_graph_smoothing[angle_index]
         spike_thresh = 0.2
 
-        #Allow to shift from one quadrant to another
-        if abs(self.previous_angles[angle_index]) - abs(angle) < spike_thresh:
-            return angle
         if buffer_val > 0:
             thresh = buffer_val * 0.3
         else:
             thresh = 0.2
         if len(self.previous_angles) == 0:
+            return angle
+         #Allow to shift from one quadrant to another
+        if abs(self.previous_angles[angle_index]) - abs(angle) < spike_thresh:
             return angle
         if abs(angle - self.previous_angles[angle_index]) > thresh:
             self.buffer_graph_smoothing[angle_index] += 1
