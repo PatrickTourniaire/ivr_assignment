@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 
-from genpy import message
-import roslib
 import sys
 import rospy
 import cv2
 import math
 import numpy as np
-from scipy.spatial.transform import Rotation
-from std_msgs.msg import String
-from sensor_msgs.msg import Image
 from std_msgs.msg import Float64MultiArray, Float64
-from cv_bridge import CvBridge, CvBridgeError
-import message_filters
 
 
 class control:
@@ -34,13 +27,10 @@ class control:
         self.ja3_data_updated = False
         self.ja4_data_updated = False
 
-        self.previous_step_time = np.array([rospy.get_time()], dtype='float64')
         self.previous_step_time2 = np.array([rospy.get_time()], dtype='float64')
-
         self.error = np.array([0.0, 0.0, 0.0], dtype="float64")
 
         self.target_pos = None
-
         self.end_effector_pos = np.array([0.0, 0.0, 10.0], dtype='float64')
 
         self.ja1 = rospy.Subscriber('joint_angle_1', Float64, self.ja1_callback)
@@ -81,7 +71,7 @@ class control:
 
     def callback(self):
         if (self.ja1_data_updated and self.ja3_data_updated and self.ja4_data_updated):
-            end_effector_pos = self.calculate_end_effector_position()
+            end_effector_pos = self.forward_kinematics(self.ja1_data, self.ja3_data, self.ja4_data)
 
             if (self.target_pos != None):
                 q_d = self.control_open(self.target_pos)
@@ -106,15 +96,6 @@ class control:
             self.ja1_data_updated = False
             self.ja3_data_updated = False
             self.ja4_data_updated = False
-    
-    def calculate_end_effector_position(self):
-        self.end_effector_pos = self.forward_kinematics(self.ja1_data, self.ja3_data, self.ja4_data)
-
-        print("=== FK END EFFECTOR ===")
-        print(self.end_effector_pos)
-        print("=======================")
-
-        return self.end_effector_pos
 
     def forward_kinematics(self, theta1, theta3, theta4):
         dh_params = [
@@ -168,9 +149,6 @@ class control:
         return rot_theta @ trans_d @ trans_a @ rot_alpha
 
     def calc_jacobian(self, ja1, ja2, ja3, ja4):
-
-        a1 = self.link_lengths["link_1"]
-        a2 = self.link_lengths["link_2"]
         a3 = self.link_lengths["link_3"]
         a4 = self.link_lengths["link_4"]
 
